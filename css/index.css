@@ -1,0 +1,60 @@
+@charset "utf-8";
+/*食品酒饮*/
+.li_model{width:100%; overflow:hidden; margin-top:40px;}
+.li_model a:hover{color:#DD0908;}
+.li_food{width:100%; overflow:hidden;}
+.li_food_t{width:100%; height:50px; line-height:50px; border-bottom:3px solid #DD0908;}
+.li_food_t span.title{float:left; margin-left:15px; font-size:22px; font-weight:bold; color:#DD0A09;}
+.li_food_a{float:right; line-height:50px;}
+.li_food_a a{margin:0 5px; color:#6C6C6C; font-size:14px;}
+.li_food_a a.more{color:#DF1918;}
+.li_food_a a.more:hover{text-decoration:underline;}
+.li_food_goods{width:100%; overflow:hidden; margin-top:19px;}
+.li_food_ul{width:110%; overflow:hidden;}
+.li_food_ul li{float:left; width:286px; height:334px; overflow:hidden; margin-right:19px;}
+.li_food_ul li img{width:286px; height:334px;}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
