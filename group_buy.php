@@ -81,6 +81,8 @@ if ($_REQUEST['act'] == 'list')
         $smarty->assign('page_title', $position['title']);    // 页面标题
         $smarty->assign('ur_here',    $position['ur_here']);  // 当前位置
         $smarty->assign('categories', get_categories_tree()); // 分类树
+		$smarty->assign('categories_pro',  get_categories_tree_pro()); // 分类树加强版
+		$smarty->assign('brand_list',      get_brands());
         $smarty->assign('helps',      get_shop_help());       // 网店帮助
         $smarty->assign('top_goods',  get_top10());           // 销售排行
         $smarty->assign('promotion_info', get_promotion_info());
@@ -105,10 +107,10 @@ elseif ($_REQUEST['act'] == 'view')
         ecs_header("Location: ./\n");
         exit;
     }
-
+	$smarty->assign('comment_percent',     comment_percent($goods_id)); 
     /* 取得团购活动信息 */
     $group_buy = group_buy_info($group_buy_id);
-
+	
     if (empty($group_buy))
     {
         ecs_header("Location: ./\n");
@@ -137,6 +139,10 @@ elseif ($_REQUEST['act'] == 'view')
         /* 取得团购商品信息 */
         $goods_id = $group_buy['goods_id'];
         $goods = goods_info($goods_id);
+         /* 读评论信息 */
+		$smarty->assign('id',           $goods_id);
+		$smarty->assign('type',         0);
+
         if (empty($goods))
         {
             ecs_header("Location: ./\n");
@@ -144,7 +150,9 @@ elseif ($_REQUEST['act'] == 'view')
         }
         $goods['url'] = build_uri('goods', array('gid' => $goods_id), $goods['goods_name']);
         $smarty->assign('gb_goods', $goods);
-
+		$properties = get_goods_properties($goods_id);  // 获得商品的规格和属性
+		$smarty->assign('properties',          $properties['pro']);                              // 商品属性
+        $smarty->assign('specification',       $properties['spe']);                              // 商品规格
         /* 取得商品的规格 */
         $properties = get_goods_properties($goods_id);
         $smarty->assign('specification', $properties['spe']); // 商品规格
@@ -152,18 +160,20 @@ elseif ($_REQUEST['act'] == 'view')
         //模板赋值
         $smarty->assign('cfg', $_CFG);
         assign_template();
-
+		$linked_goods = get_linked_goods($goods_id);
+		
         $position = assign_ur_here(0, $goods['goods_name']);
         $smarty->assign('page_title', $position['title']);    // 页面标题
         $smarty->assign('ur_here',    $position['ur_here']);  // 当前位置
-
+        $smarty->assign('related_goods',       $linked_goods);                                   // 关联商品
+		$smarty->assign('brand_list',      get_brands());
         $smarty->assign('categories', get_categories_tree()); // 分类树
+		$smarty->assign('categories_pro',  get_categories_tree_pro()); // 分类树加强版
         $smarty->assign('helps',      get_shop_help());       // 网店帮助
         $smarty->assign('top_goods',  get_top10());           // 销售排行
         $smarty->assign('promotion_info', get_promotion_info());
         assign_dynamic('group_buy_goods');
     }
-
     //更新商品点击次数
     $sql = 'UPDATE ' . $ecs->table('goods') . ' SET click_count = click_count + 1 '.
            "WHERE goods_id = '" . $group_buy['goods_id'] . "'";
@@ -324,13 +334,14 @@ function group_buy_list($size, $page)
     /* 取得团购活动 */
     $gb_list = array();
     $now = gmtime();
-    $sql = "SELECT b.*, IFNULL(g.goods_thumb, '') AS goods_thumb, b.act_id AS group_buy_id, ".
+    $sql = "SELECT b.*, IFNULL(g.goods_thumb, '') AS goods_thumb, b.act_id AS group_buy_id, g.market_price,".
                 "b.start_time AS start_date, b.end_time AS end_date " .
             "FROM " . $GLOBALS['ecs']->table('goods_activity') . " AS b " .
                 "LEFT JOIN " . $GLOBALS['ecs']->table('goods') . " AS g ON b.goods_id = g.goods_id " .
             "WHERE b.act_type = '" . GAT_GROUP_BUY . "' " .
             "AND b.start_time <= '$now' AND b.is_finished < 3 ORDER BY b.act_id DESC";
     $res = $GLOBALS['db']->selectLimit($sql, $size, ($page - 1) * $size);
+
     while ($group_buy = $GLOBALS['db']->fetchRow($res))
     {
         $ext_info = unserialize($group_buy['ext_info']);
@@ -357,7 +368,26 @@ function group_buy_list($size, $page)
             }
         }
         $group_buy['price_ladder'] = $price_ladder;
-
+	
+		/*团购节省和折扣计算 by ecmoban start*/
+		$price    = $group_buy['market_price']; //原价 
+		$nowprice = $group_buy['price_ladder'][0]['price']; //现价
+		$group_buy['jiesheng'] = $price-$nowprice; //节省金额 
+		if($nowprice > 0)
+		{
+			$group_buy['zhekou'] = round(10 / ($price / $nowprice), 1);
+		}
+		else 
+		{ 
+			$group_buy['zhekou'] = 0;
+		}
+		
+		
+		
+		
+		$stat = group_buy_stat($group_buy['act_id'], $ext_info['deposit']);
+		$group_buy['cur_amount'] = $stat['valid_goods'];         // 当前数量
+		
         /* 处理图片 */
         if (empty($group_buy['goods_thumb']))
         {
@@ -372,4 +402,78 @@ function group_buy_list($size, $page)
     return $gb_list;
 }
 
+
+/**
+ * 获得指定商品的关联商品
+ *
+ * @access  public
+ * @param   integer     $goods_id
+ * @return  array
+ */
+function get_linked_goods($goods_id)
+{
+    $sql = 'SELECT g.goods_id, g.goods_name,g.is_new,g.is_best,g.is_hot,g.goods_brief, g.goods_thumb, g.goods_img, g.shop_price AS org_price, ' .
+                "IFNULL(mp.user_price, g.shop_price * '$_SESSION[discount]') AS shop_price, ".
+                'g.market_price, g.promote_price, g.promote_start_date, g.promote_end_date ' .
+            'FROM ' . $GLOBALS['ecs']->table('link_goods') . ' lg ' .
+            'LEFT JOIN ' . $GLOBALS['ecs']->table('goods') . ' AS g ON g.goods_id = lg.link_goods_id ' .
+            "LEFT JOIN " . $GLOBALS['ecs']->table('member_price') . " AS mp ".
+                    "ON mp.goods_id = g.goods_id AND mp.user_rank = '$_SESSION[user_rank]' ".
+            "WHERE lg.goods_id = '$goods_id' AND g.is_on_sale = 1 AND g.is_alone_sale = 1 AND g.is_delete = 0 ".
+            "LIMIT " . $GLOBALS['_CFG']['related_goods_number'];
+    $res = $GLOBALS['db']->query($sql);	
+
+	
+    $arr = array();
+    while ($row = $GLOBALS['db']->fetchRow($res))
+    {
+		
+        $watermark_img = '';
+
+        if ($promote_price != 0)
+        {
+            $watermark_img = "watermark_promote_small";
+        }
+        elseif ($row['is_new'] != 0)
+        {
+            $watermark_img = "watermark_new_small";
+        }
+        elseif ($row['is_best'] != 0)
+        {
+            $watermark_img = "watermark_best_small";
+        }
+        elseif ($row['is_hot'] != 0)
+        {
+            $watermark_img = 'watermark_hot_small';
+        }
+
+        if ($watermark_img != '')
+        {
+             $arr[$row['goods_id']]['watermark_img'] =  $watermark_img;
+        }
+		
+        $arr[$row['goods_id']]['goods_id']     = $row['goods_id'];
+        $arr[$row['goods_id']]['goods_name']   = $row['goods_name'];
+		$arr[$row['goods_id']]['goods_brief']   = $row['goods_brief'];
+        $arr[$row['goods_id']]['short_name']   = $GLOBALS['_CFG']['goods_name_length'] > 0 ?
+            sub_str($row['goods_name'], $GLOBALS['_CFG']['goods_name_length']) : $row['goods_name'];
+        $arr[$row['goods_id']]['goods_thumb']  = get_image_path($row['goods_id'], $row['goods_thumb'], true);
+        $arr[$row['goods_id']]['goods_img']    = get_image_path($row['goods_id'], $row['goods_img']);
+        $arr[$row['goods_id']]['market_price'] = price_format($row['market_price']);
+        $arr[$row['goods_id']]['shop_price']   = price_format($row['shop_price']);
+        $arr[$row['goods_id']]['url']          = build_uri('goods', array('gid'=>$row['goods_id']), $row['goods_name']);
+
+        if ($row['promote_price'] > 0)
+        {
+            $arr[$row['goods_id']]['promote_price'] = bargain_price($row['promote_price'], $row['promote_start_date'], $row['promote_end_date']);
+            $arr[$row['goods_id']]['formated_promote_price'] = price_format($arr[$row['goods_id']]['promote_price']);
+        }
+        else
+        {
+            $arr[$row['goods_id']]['promote_price'] = 0;
+        }
+    }
+
+    return $arr;
+}
 ?>

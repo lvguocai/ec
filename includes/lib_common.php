@@ -87,6 +87,7 @@ function is_email($user_email)
     }
 }
 
+
 /**
  * 检查是否为一个合法的时间格式
  *
@@ -859,6 +860,7 @@ function get_children($cat = 0)
 {
     return 'g.cat_id ' . db_create_in(array_unique(array_merge(array($cat), array_keys(cat_list($cat, 0, false)))));
 }
+
 
 /**
  * 获得指定文章分类下所有底层分类的ID

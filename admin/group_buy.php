@@ -723,7 +723,7 @@ function group_buy_list()
                 " WHERE act_type = '" . GAT_GROUP_BUY . "' $where ".
                 " ORDER BY $filter[sort_by] $filter[sort_order] ".
                 " LIMIT ". $filter['start'] .", $filter[page_size]";
-
+	
         $filter['keyword'] = stripslashes($filter['keyword']);
         set_filter($filter, $sql);
     }

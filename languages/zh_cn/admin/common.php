@@ -34,6 +34,7 @@ $_LANG['username_rule'] = '用户名应为汉字、英文字符、数字组合�
 $_LANG['plugins_not_found'] = '插件 %s 无法定位';
 $_LANG['no_records'] = '没有找到任何记录';
 $_LANG['role_describe'] = '角色描述';
+$_LANG['website'] = '第三方登录插件管理';  //名字你可以自己定
 
 $_LANG['require_field'] = '<span class="require-field">*</span>';
 $_LANG['yes'] = '是';
@@ -293,9 +294,6 @@ $_LANG['04_sms_charge'] = '账户充值';
 $_LANG['05_sms_send_history'] = '发送记录';
 $_LANG['06_sms_charge_history'] = '充值记录';
 
-
-
-
 $_LANG['affiliate'] = '推荐设置';
 $_LANG['affiliate_ck'] = '分成管理';
 $_LANG['flashplay'] = '首页主广告管理';
@@ -345,10 +343,4 @@ $_LANG['brand_name_exist'] = '已存在相同的品牌名称!';
 
 $_LANG['alipay_login'] = '<a href="https://www.alipay.com/user/login.htm?goto=https%3A%2F%2Fwww.alipay.com%2Fhimalayas%2Fpracticality_profile_edit.htm%3Fmarket_type%3Dfrom_agent_contract%26customer_external_id%3D%2BC4335319945672464113" target="_blank">立即免费申请支付接口权限</a>';
 $_LANG['alipay_look'] = '<a href=\"https://www.alipay.com/himalayas/practicality.htm\" target=\"_blank\">请申请成功后登录支付宝账户查看</a>';
-
-
-
-$_LANG['04_sms_sign'] = '短信签名';
-
-
 ?>

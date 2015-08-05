@@ -72,6 +72,7 @@ elseif ($_REQUEST['act'] == 'list')
     $smarty->assign('full_page',        1);
 
     $order_list = order_list();
+
     $smarty->assign('order_list',   $order_list['orders']);
     $smarty->assign('filter',       $order_list['filter']);
     $smarty->assign('record_count', $order_list['record_count']);
@@ -896,6 +897,30 @@ elseif ($_REQUEST['act'] == 'delivery_ship')
             $sms->send($order['mobile'], sprintf($GLOBALS['_LANG']['order_shipped_sms'], $order['order_sn'],
                 local_date($GLOBALS['_LANG']['sms_time_format']), $GLOBALS['_CFG']['shop_name']), 0);
         }
+		
+		
+		/* 微信发送 */
+		$wxch_order_name = 'order';
+		include(ROOT_PATH . 'admin/wxch_order.php');
+		/* 更新商品销量 */
+		$sql = 'SELECT goods_id,goods_number FROM '.$GLOBALS['ecs']->table('order_goods').' WHERE order_id ='.$order_id;
+		$order_res = $GLOBALS['db']->getAll($sql);	
+		foreach($order_res as $idx=>$val)
+		{
+			$sql = 'SELECT SUM(og.goods_number) as goods_number ' .
+				'FROM ' . $GLOBALS['ecs']->table('goods') . ' AS g, ' .
+                $GLOBALS['ecs']->table('order_info') . ' AS o, ' .
+                $GLOBALS['ecs']->table('order_goods') . ' AS og ' .
+				"WHERE g.is_on_sale = 1 AND g.is_alone_sale = 1 AND g.is_delete = 0 AND og.order_id = o.order_id AND og.goods_id = g.goods_id " .
+				"AND (o.order_status = '" . OS_CONFIRMED .  "' OR o.order_status = '" . OS_SPLITED . "') " .
+				"AND (o.pay_status = '" . PS_PAYED . "' OR o.pay_status = '" . PS_PAYING . "') " .
+				"AND (o.shipping_status = '" . SS_SHIPPED . "' OR o.shipping_status = '" . SS_RECEIVED . "') AND g.goods_id=".$val['goods_id'];
+
+			$sales_volume = $GLOBALS['db']->getOne($sql);	
+			$sql = "update " . $ecs->table('goods') . " set sales_volume=$sales_volume WHERE goods_id =".$val['goods_id'];
+	
+			$db->query($sql);
+		}	
     }
 
     /* 清除缓存 */
@@ -5042,7 +5067,7 @@ function order_list()
         $sql = "SELECT o.order_id, o.order_sn, o.add_time, o.order_status, o.shipping_status, o.order_amount, o.money_paid," .
                     "o.pay_status, o.consignee, o.address, o.email, o.tel, o.extension_code, o.extension_id, " .
                     "(" . order_amount_field('o.') . ") AS total_fee, " .
-                    "IFNULL(u.user_name, '" .$GLOBALS['_LANG']['anonymous']. "') AS buyer ".
+                    "IFNULL(u.user_name, '" .$GLOBALS['_LANG']['anonymous']. "') AS buyer ,u.parent_id".
                 " FROM " . $GLOBALS['ecs']->table('order_info') . " AS o " .
                 " LEFT JOIN " .$GLOBALS['ecs']->table('users'). " AS u ON u.user_id=o.user_id ". $where .
                 " ORDER BY $filter[sort_by] $filter[sort_order] ".
@@ -5078,6 +5103,7 @@ function order_list()
         {
             $row[$key]['can_remove'] = 0;
         }
+
     }
     $arr = array('orders' => $row, 'filter' => $filter, 'page_count' => $filter['page_count'], 'record_count' => $filter['record_count']);
 

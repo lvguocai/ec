@@ -96,6 +96,7 @@ if ($_REQUEST['act'] == 'advanced_search')
     $smarty->assign('ur_here',    $position['ur_here']);  // 当前位置
 
     $smarty->assign('categories', get_categories_tree()); // 分类树
+	$smarty->assign('categories_pro',  get_categories_tree_pro()); // 分类树加强版
     $smarty->assign('helps',      get_shop_help());       // 网店帮助
     $smarty->assign('top_goods',  get_top10());           // 销售排行
     $smarty->assign('promotion_info', get_promotion_info());
@@ -381,7 +382,7 @@ else
     }
 
     /* 查询商品 */
-    $sql = "SELECT g.goods_id, g.goods_name, g.market_price, g.is_new, g.is_best, g.is_hot, g.shop_price AS org_price, ".
+    $sql = "SELECT g.goods_id, g.goods_name, g.market_price, g.is_new, g.comments_number, g.sales_volume, g.is_best, g.is_hot, g.shop_price AS org_price, ".
                 "IFNULL(mp.user_price, g.shop_price * '$_SESSION[discount]') AS shop_price, ".
                 "g.promote_price, g.promote_start_date, g.promote_end_date, g.goods_thumb, g.goods_img, g.goods_brief, g.goods_type ".
             "FROM " .$ecs->table('goods'). " AS g ".
@@ -439,7 +440,18 @@ else
         {
             $arr[$row['goods_id']]['goods_name'] = $row['goods_name'];
         }
-        $arr[$row['goods_id']]['type']          = $row['goods_type'];
+		
+		/* 折扣节省计算 by ecmoban start */
+		if($row['market_price'] > 0)
+		{
+			$discount_arr = get_discount($row['goods_id']); //函数get_discount参数goods_id
+		}
+		$arr[$row['goods_id']]['zhekou']  = $discount_arr['discount'];  //zhekou
+		$arr[$row['goods_id']]['jiesheng']  = $discount_arr['jiesheng']; //jiesheng
+		/* 折扣节省计算 by ecmoban end */
+		$arr[$row['goods_id']]['type']          = $row['goods_type'];
+		$arr[$row['goods_id']]['comments_number']          = $row['comments_number'];
+        $arr[$row['goods_id']]['sales_volume']          = $row['sales_volume'];
         $arr[$row['goods_id']]['market_price']  = price_format($row['market_price']);
         $arr[$row['goods_id']]['shop_price']    = price_format($row['shop_price']);
         $arr[$row['goods_id']]['promote_price'] = ($promote_price > 0) ? price_format($promote_price) : '';
@@ -508,6 +520,7 @@ else
     $smarty->assign('ur_here',    $position['ur_here']);  // 当前位置
     $smarty->assign('intromode',      $intromode);
     $smarty->assign('categories', get_categories_tree()); // 分类树
+	$smarty->assign('categories_pro',  get_categories_tree_pro()); // 分类树加强版
     $smarty->assign('helps',       get_shop_help());      // 网店帮助
     $smarty->assign('top_goods',  get_top10());           // 销售排行
     $smarty->assign('promotion_info', get_promotion_info());

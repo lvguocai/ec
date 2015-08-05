@@ -34,10 +34,6 @@
     <div class="blank5"></div>
     <!--站内公告 end-->
   <!-- TemplateBeginEditable name="左边区域" -->
-<!-- #BeginLibraryItem "/library/ad_position.lbi" -->
-
-{insert name='ads' id=$ads_id num=$ads_num}
- <!-- #EndLibraryItem -->
 <!-- #BeginLibraryItem "/library/cart.lbi" -->
 
 {insert_scripts files='transport.js'}
@@ -113,8 +109,6 @@
     <a href="auction.php" title="{$lang.$item.type}">{$lang.auction_promotion}</a>
     <!-- {elseif $item.type eq "favourable"} -->
     <a href="activity.php" title="{$lang.$item.type}">{$lang.favourable_promotion}</a>
-    <!-- {elseif $item.type eq "package"} -->
-    <a href="package.php" title="{$lang.$item.type}">{$lang.package_promotion}</a>
     <!-- {/if} -->
     <a href="{$item.url}" title="{$lang.$item.type} {$item.act_name}{$item.time}" style="background:none; padding-left:0px;">{$item.act_name}</a><br />
     <!-- {/foreach} -->

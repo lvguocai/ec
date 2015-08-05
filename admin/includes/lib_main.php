@@ -311,15 +311,49 @@ function get_position_list()
 function create_html_editor($input_name, $input_value = '')
 {
     global $smarty;
+    $kindeditor="<script charset='utf-8' src='../includes/kindeditor/kindeditor-min.js'></script>
+    <script>
+        var editor;
+            KindEditor.ready(function(K) {
+                editor = K.create('textarea[name=\"$input_name\"]', {
+                    allowFileManager : true,
+                    width : '700px',
+                    height: '300px',
+                    resizeType: 0    //固定宽高
+                });
+            });
+    </script>
+    <textarea id=\"$input_name\" name=\"$input_name\" style='width:700px;height:300px;'>$input_value</textarea>
+    ";
+    $smarty->assign('FCKeditor', $kindeditor);  //这里前面的 FCKEditor 不要变
+}
 
-    $editor = new FCKeditor($input_name);
-    $editor->BasePath   = '../includes/fckeditor/';
-    $editor->ToolbarSet = 'Normal';
-    $editor->Width      = '100%';
-    $editor->Height     = '320';
-    $editor->Value      = $input_value;
-    $FCKeditor = $editor->CreateHtml();
-    $smarty->assign('FCKeditor', $FCKeditor);
+/**
+ * 生成编辑器2
+ * @param   string  input_name  输入框名称
+ * @param   string  input_value 输入框值
+ */
+
+
+
+function create_html_editor2($input_name, $output_name, $input_value = '')
+{
+    global $smarty;
+    $kindeditor="<script charset='utf-8' src='../includes/kindeditor/kindeditor-min.js'></script>
+    <script>
+        var editor;
+            KindEditor.ready(function(K) {
+                editor = K.create('textarea[name=\"$input_name\"]', {
+                    allowFileManager : true,
+                    width : '700px',
+                    height: '300px',
+                    resizeType: 0    //固定宽高
+                });
+            });
+    </script>
+    <textarea id=\"$input_name\" name=\"$input_name\" style='width:700px;height:300px;'>$input_value</textarea>
+    ";
+  $smarty->assign($output_name, $kindeditor);  //这里前面的 FCKEditor 不要变
 }
 
 /**

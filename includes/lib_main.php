@@ -153,7 +153,7 @@ function assign_ur_here($cat = 0, $str = '')
     }
 
     /* 初始化“页面标题”和“当前位置” */
-    $page_title = $GLOBALS['_CFG']['shop_title'] . ' - ' . 'Powered by ECShop';
+    $page_title = $GLOBALS['_CFG']['shop_title'];
     $ur_here    = '<a href=".">' . $GLOBALS['_LANG']['home'] . '</a>';
 
     /* 根据文件名分别处理中间的部分 */
@@ -1148,7 +1148,7 @@ function visit_stats()
                 'referer_domain, referer_path, access_url, access_time' .
             ') VALUES (' .
                 "'$ip', '$visit_times', '$browser', '$os', '$lang', '$area', ".
-                "'" . htmlspecialchars(addslashes($domain)) ."', '" . htmlspecialchars(addslashes($path)) ."', '" . htmlspecialchars(addslashes(PHP_SELF)) ."', '" . $time . "')";
+                "'" . addslashes($domain) ."', '" . addslashes($path) ."', '" . addslashes(PHP_SELF) ."', '" . $time . "')";
     $GLOBALS['db']->query($sql);
 }
 
@@ -1273,7 +1273,7 @@ function save_searchengine_keyword($domain, $path)
             $keywords = ecs_iconv('UTF8', 'GBK', $keywords);
         }
 
-        $GLOBALS['db']->autoReplace($GLOBALS['ecs']->table('keywords'), array('date' => local_date('Y-m-d'), 'searchengine' => $searchengine, 'keyword' => htmlspecialchars(addslashes($keywords)), 'count' => 1), array('count' => 1));
+        $GLOBALS['db']->autoReplace($GLOBALS['ecs']->table('keywords'), array('date' => local_date('Y-m-d'), 'searchengine' => $searchengine, 'keyword' => addslashes($keywords), 'count' => 1), array('count' => 1));
     }
 }
 
@@ -1997,9 +1997,16 @@ function get_navigator($ctype = '', $catlist = array())
             $navlist['middle'][$k]['active'] = 1;
             $noindex = true;
             $active += 1;
-        }
+        }		if(substr($v['url'],0,8)=='category')
+		{
+			$cat_id = $v['cid'];
+			$children = get_children($cat_id);
+			$cat_list = get_categories_tree_xaphp($cat_id);
+			$navlist['middle'][$k]['cat'] =1;
+			$navlist['middle'][$k]['cat_list'] =$cat_list;
+		}		
     }
-
+	
     if(!empty($ctype) && $active < 1)
     {
         foreach($catlist as $key => $val)
@@ -2021,6 +2028,52 @@ function get_navigator($ctype = '', $catlist = array())
     }
 
     return $navlist;
+}
+
+function get_categories_tree_xaphp($cat_id = 0)
+{
+    if ($cat_id > 0)
+    {
+        $sql = 'SELECT parent_id FROM ' . $GLOBALS['ecs']->table('category') . " WHERE cat_id = '$cat_id'";
+        $parent_id = $GLOBALS['db']->getOne($sql);
+    }
+    else
+    {
+        $parent_id = 0;
+    }
+    /*
+     判断当前分类中全是是否是底级分类，
+     如果是取出底级分类上级分类，
+     如果不是取当前分类及其下的子分类
+    */
+    $sql = 'SELECT count(*) FROM ' . $GLOBALS['ecs']->table('category') . " WHERE parent_id = '$cat_id' AND is_show = 1 ";
+   
+        /* 获取当前分类及其子分类 */
+        $sql = 'SELECT cat_id,cat_name ,parent_id,is_show ' .
+                'FROM ' . $GLOBALS['ecs']->table('category') .
+                "WHERE parent_id = '$cat_id' AND is_show = 1 ORDER BY sort_order ASC, cat_id ASC";
+        $res = $GLOBALS['db']->getAll($sql);
+        foreach ($res AS $row)
+        {
+            if ($row['is_show'])
+            {
+                $cat_arr[$row['cat_id']]['id']   = $row['cat_id'];
+                $cat_arr[$row['cat_id']]['name'] = $row['cat_name'];
+                $cat_arr[$row['cat_id']]['url']  = build_uri('category', array('cid' => $row['cat_id']), $row['cat_name']);
+				
+                if (isset($row['cat_id']) != NULL)
+                {
+                    $cat_arr[$row['cat_id']]['cat_id'] = get_child_tree($row['cat_id']);
+                }
+				
+           }
+        }
+		
+    
+    if(isset($cat_arr))
+    {
+        return $cat_arr;
+    }
 }
 
 /**

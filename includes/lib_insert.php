@@ -81,6 +81,7 @@ function insert_history()
                 " WHERE $where AND is_on_sale = 1 AND is_alone_sale = 1 AND is_delete = 0";
         $query = $GLOBALS['db']->query($sql);
         $res = array();
+		
         while ($row = $GLOBALS['db']->fetch_array($query))
         {
             $goods['goods_id'] = $row['goods_id'];
@@ -89,13 +90,43 @@ function insert_history()
             $goods['goods_thumb'] = get_image_path($row['goods_id'], $row['goods_thumb'], true);
             $goods['shop_price'] = price_format($row['shop_price']);
             $goods['url'] = build_uri('goods', array('gid'=>$row['goods_id']), $row['goods_name']);
-            $str.='<ul class="clearfix"><li class="goodsimg"><a href="'.$goods['url'].'" target="_blank"><img src="'.$goods['goods_thumb'].'" alt="'.$goods['goods_name'].'" class="B_blue" /></a></li><li><a href="'.$goods['url'].'" target="_blank" title="'.$goods['goods_name'].'">'.$goods['short_name'].'</a><br />'.$GLOBALS['_LANG']['shop_price'].'<font class="f1">'.$goods['shop_price'].'</font><br /></li></ul>';
+            $str.='<li class="goodsimg"><a href="'.$goods['url'].'" target="_blank" class="history_pic"><img src="'.$goods['goods_thumb'].'" alt="'.$goods['goods_name'].'" /></a><a href="'.$goods['url'].'" target="_blank"  title="'.$goods['goods_name'].'" class="history_name">'.$goods['short_name'].'</a>'.'<p class="history_price">'.'<a  href="'.$goods['url'].'">'.$goods['shop_price'].'</a>'.'</p></li>';
         }
         $str .= '<ul id="clear_history"><a onclick="clear_history()">' . $GLOBALS['_LANG']['clear_history'] . '</a></ul>';
     }
     return $str;
 }
 
+
+function insert_index_history()
+{
+    $str = '';
+    if (!empty($_COOKIE['ECS']['history']))
+    {
+        $where = db_create_in($_COOKIE['ECS']['history'], 'goods_id');
+        $sql   = 'SELECT goods_id, goods_name, goods_thumb, shop_price ,market_price FROM ' . $GLOBALS['ecs']->table('goods') .
+                " WHERE $where AND is_on_sale = 1 AND is_alone_sale = 1 AND is_delete = 0";
+        $res = $GLOBALS['db']->getAll($sql);
+     	
+		foreach($res as $idx => $row)
+		{
+			$goods[$idx]['goods_id'] = $row['goods_id'];
+            $goods[$idx]['goods_name'] = $row['goods_name'];
+            $goods[$idx]['short_name'] = $GLOBALS['_CFG']['goods_name_length'] > 0 ? sub_str($row['goods_name'], $GLOBALS['_CFG']['goods_name_length']) : $row['goods_name'];
+            $goods[$idx]['goods_thumb'] = get_image_path($row['goods_id'], $row['goods_thumb'], true);
+            $goods[$idx]['shop_price'] = price_format($row['shop_price']);
+			$goods[$idx]['market_price'] = price_format($row['market_price']);
+            $goods[$idx]['url'] = build_uri('goods', array('gid'=>$row['goods_id']), $row['goods_name']);	
+		}
+		
+		$GLOBALS['smarty']->assign('history_goods',$goods);
+	    $output = $GLOBALS['smarty']->fetch('library/history_info.lbi');
+		$GLOBALS['smarty']->caching = $need_cache;
+		return $output;
+    }
+   // return $str;
+}	
+		
 /**
  * 调用购物车信息
  *
@@ -104,6 +135,23 @@ function insert_history()
  */
 function insert_cart_info()
 {
+    $sql = 'SELECT c.*,g.goods_name,g.goods_thumb,g.goods_id,c.goods_number,c.goods_price' .
+           ' FROM ' . $GLOBALS['ecs']->table('cart') ." AS c ".
+					 " LEFT JOIN ".$GLOBALS['ecs']->table('goods')." AS g ON g.goods_id=c.goods_id ".
+           " WHERE session_id = '" . SESS_ID . "' AND rec_type = '" . CART_GENERAL_GOODS . "'";
+    $row = $GLOBALS['db']->GetAll($sql);
+		$arr = array();
+		foreach($row AS $k=>$v)
+		{
+				$arr[$k]['goods_thumb']  =get_image_path($v['goods_id'], $v['goods_thumb'], true);
+        $arr[$k]['short_name']   = $GLOBALS['_CFG']['goods_name_length'] > 0 ?
+                                               sub_str($v['goods_name'], $GLOBALS['_CFG']['goods_name_length']) : $v['goods_name'];
+				$arr[$k]['url']          = build_uri('goods', array('gid' => $v['goods_id']), $v['goods_name']);
+				$arr[$k]['goods_number'] = $v['goods_number'];
+				$arr[$k]['goods_name']   = $v['goods_name'];
+				$arr[$k]['goods_price']  = price_format($v['goods_price']);
+				$arr[$k]['rec_id']       = $v['rec_id'];
+		}		
     $sql = 'SELECT SUM(goods_number) AS number, SUM(goods_price * goods_number) AS amount' .
            ' FROM ' . $GLOBALS['ecs']->table('cart') .
            " WHERE session_id = '" . SESS_ID . "' AND rec_type = '" . CART_GENERAL_GOODS . "'";
@@ -119,11 +167,54 @@ function insert_cart_info()
         $number = 0;
         $amount = 0;
     }
-
-    $str = sprintf($GLOBALS['_LANG']['cart_info'], $number, price_format($amount, false));
-
-    return '<a href="flow.php" title="' . $GLOBALS['_LANG']['view_cart'] . '">' . $str . '</a>';
+	$GLOBALS['smarty']->assign('number',$number);
+	$GLOBALS['smarty']->assign('amount',$amount);
+	
+    $GLOBALS['smarty']->assign('str',sprintf($GLOBALS['_LANG']['cart_info'], $number, price_format($amount, false)));
+	$GLOBALS['smarty']->assign('goods',$arr);
+		
+    $output = $GLOBALS['smarty']->fetch('library/cart_info.lbi');
+    return $output;
 }
+
+/**
+ * 调用购物车加减返回信息
+ *
+ * @access  public
+ * @return  string
+ */
+function insert_flow_info($goods_price,$market_price,$saving,$save_rate,$goods_amount,$real_goods_count)
+{
+    $GLOBALS['smarty']->assign('goods_price',$goods_price);
+	$GLOBALS['smarty']->assign('market_price',$market_price);
+	$GLOBALS['smarty']->assign('saving',$saving);
+	$GLOBALS['smarty']->assign('save_rate',$save_rate);
+	$GLOBALS['smarty']->assign('goods_amount',$goods_amount);
+	$GLOBALS['smarty']->assign('real_goods_count',$real_goods_count);
+		
+    $output = $GLOBALS['smarty']->fetch('library/flow_info.lbi');
+    return $output;
+}
+
+/**
+ * 购物车弹出框返回信息
+ *
+ * @access  public
+ * @return  string
+ */
+function insert_show_div_info($goods_number,$script_name,$goods_id,$goods_recommend,$goods_amount,$real_goods_count)
+{
+    $GLOBALS['smarty']->assign('goods_number',$goods_number);
+	$GLOBALS['smarty']->assign('script_name',$script_name);
+	$GLOBALS['smarty']->assign('goods_id',$goods_id);
+	$GLOBALS['smarty']->assign('goods_recommend',$goods_recommend);
+	$GLOBALS['smarty']->assign('goods_amount',$goods_amount);
+	$GLOBALS['smarty']->assign('real_goods_count',$real_goods_count);
+
+    $output = $GLOBALS['smarty']->fetch('library/show_div_info.lbi');
+    return $output;
+}
+
 
 /**
  * 调用指定的广告位的广告
@@ -364,6 +455,50 @@ function insert_vote()
     $val = $GLOBALS['smarty']->fetch('library/vote.lbi');
 
     return $val;
+}
+
+//广告位小图
+function insert_get_adv_child($arr)
+{
+	$need_cache = $GLOBALS['smarty']->caching;
+    $need_compile = $GLOBALS['smarty']->force_compile;
+
+    $GLOBALS['smarty']->caching = false;
+    $GLOBALS['smarty']->force_compile = true;
+
+    /* 验证码相关设置 */
+    if ((intval($GLOBALS['_CFG']['captcha']) & CAPTCHA_COMMENT) && gd_version() > 0)
+    {
+        $GLOBALS['smarty']->assign('enabled_captcha', 1);
+        $GLOBALS['smarty']->assign('rand', mt_rand());
+    }
+	$id_name = '_'.$arr['id']."',";
+	$str_ad = str_replace(',',$id_name,$arr['ad_arr']);
+	$in_ad_arr = substr($str_ad,0,strlen($str_ad)-1);
+
+	$GLOBALS['smarty']->assign('ad_child', get_ad_posti_child($in_ad_arr));
+	  
+	$val = $GLOBALS['smarty']->fetch('library/position_get_adv_small.lbi');  
+	  
+	$GLOBALS['smarty']->caching = $need_cache;
+    $GLOBALS['smarty']->force_compile = $need_compile;
+	
+	return $val;
+}
+function get_ad_posti_child($cat_n_child = ''){
+
+	$cat_child = " ad.ad_name in($cat_n_child) and ";
+	
+	$sql = "select ap.ad_width,ap.ad_height,ad.ad_name,ad.ad_code,ad.ad_link from ".$GLOBALS['ecs']->table('ad_position')." as ap left join ".$GLOBALS['ecs']->table('ad')." as ad on ad.position_id = ap.position_id where " .$cat_child. " ad.media_type=0 and UNIX_TIMESTAMP()>ad.start_time and UNIX_TIMESTAMP()<ad.end_time and ad.enabled=1";
+     $res = $GLOBALS['db']->getAll($sql);
+	 
+	 foreach($res as $key=>$row){
+		 $key = $key + 1; 
+		 $arr[$key]['ad_code'] = $row['ad_code'];
+		 $arr[$key]['ad_link'] = $row['ad_link'];
+	 }
+	 
+	 return $arr;
 }
 
 ?>

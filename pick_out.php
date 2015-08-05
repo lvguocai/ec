@@ -257,6 +257,7 @@ $smarty->assign('brand_list',       $brand_list);       //品牌
 $smarty->assign('cat_list',         $cat_list);        //分类列表
 
 $smarty->assign('categories',       get_categories_tree()); // 分类树
+$smarty->assign('categories_pro',  get_categories_tree_pro()); // 分类树加强版
 $smarty->assign('helps',            get_shop_help());  // 网店帮助
 $smarty->assign('top_goods',        get_top10());      // 销售排行
 $smarty->assign('data_dir',         DATA_DIR);  // 数据目录

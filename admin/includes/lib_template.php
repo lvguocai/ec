@@ -116,6 +116,7 @@ $page_libs = array(
     'flow' => array(
         '/library/ur_here.lbi' => 0,
     '/library/search_form.lbi' => 0,
+	'/library/recommend_promotion.lbi' => 3,
     ),
     'index' => array(
         '/library/ur_here.lbi' => 0,
@@ -145,6 +146,11 @@ $page_libs = array(
         '/library/cart.lbi' => 0,
         '/library/member.lbi' => 0,
         '/library/category_tree.lbi' => 0,
+		'/library/top10.lbi' => 0,
+		'/library/recommend_best.lbi' => 3,
+        '/library/recommend_new.lbi' => 3,
+        '/library/recommend_hot.lbi' => 3,
+        '/library/recommend_promotion.lbi' => 4,
         '/library/goods_attrlinked.lbi' => 0,
         '/library/history.lbi' => 0,
         '/library/goods_fittings.lbi' => 0,
@@ -192,6 +198,8 @@ $page_libs = array(
         '/library/promotion_info.lbi' => 0,
         '/library/cart.lbi' => 0,
         '/library/history.lbi' => 0,
+		'/library/goods_related.lbi' => 0,
+		'/library/brands.lbi' => 3,
     ),
     'group_buy_list' => array(
         '/library/ur_here.lbi' => 0,
@@ -202,6 +210,7 @@ $page_libs = array(
         '/library/cart.lbi' => 0,
         '/library/top10.lbi' => 0,
         '/library/history.lbi' => 0,
+		'/library/brands.lbi' => 3,
     ),
     'search' => array(
         '/library/ur_here.lbi' => 0,

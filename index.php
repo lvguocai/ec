@@ -19,7 +19,7 @@ require(dirname(__FILE__) . '/includes/init.php');
 
 if ((DEBUG_MODE & 2) != 2)
 {
-   // $smarty->caching = true;
+    $smarty->caching = true;
 }
 $ua = strtolower($_SERVER['HTTP_USER_AGENT']);
 
@@ -111,13 +111,27 @@ if (!$smarty->is_cached('index.dwt', $cache_id))
     $smarty->assign('feed_url',        ($_CFG['rewrite'] == 1) ? 'feed.xml' : 'feed.php'); // RSS URL
 
     $smarty->assign('categories',      get_categories_tree()); // 分类树
+	
+	$smarty->assign('categories_pro',  get_categories_tree_pro()); // 分类树加强版
+     /**小图 start**/
+	/*打开页面即可执行，仅执行一次，随即删掉*/
+		
+	for($i=1;$i<=$_CFG['auction_ad'];$i++){
+			$ad_arr .= "'c".$i.",";
+		}
+	$smarty->assign('adarr',       $ad_arr); // 分类广告位
+	/**小图 end**/
+
+
     $smarty->assign('helps',           get_shop_help());       // 网店帮助
     $smarty->assign('top_goods',       get_top10());           // 销售排行
 
     $smarty->assign('best_goods',      get_recommend_goods('best'));    // 推荐商品
     $smarty->assign('new_goods',       get_recommend_goods('new'));     // 最新商品
-    $smarty->assign('hot_goods',       get_recommend_goods('hot'));     // 热点文章
+    $smarty->assign('hot_goods',       get_recommend_goods('hot'));     // 热卖商品
+
     $smarty->assign('promotion_goods', get_promote_goods()); // 特价商品
+
     $smarty->assign('brand_list',      get_brands());
     $smarty->assign('promotion_info',  get_promotion_info()); // 增加一个动态显示所有促销信息的标签栏
 
@@ -126,6 +140,9 @@ if (!$smarty->is_cached('index.dwt', $cache_id))
     $smarty->assign('group_buy_goods', index_get_group_buy());      // 团购商品
     $smarty->assign('auction_list',    index_get_auction());        // 拍卖活动
     $smarty->assign('shop_notice',     $_CFG['shop_notice']);       // 商店公告
+	/*jdy add 0816 添加首页幻灯插件*/
+    $smarty->assign("flash",get_flash_xml());
+    $smarty->assign('flash_count',count(get_flash_xml()));
 
     /* 首页主广告设置 */
     $smarty->assign('index_ad',     $_CFG['index_ad']);
@@ -158,7 +175,6 @@ if (!$smarty->is_cached('index.dwt', $cache_id))
     assign_dynamic('index');
 }
 
-//$smarty->display('index1.dwt', $cache_id);
 $smarty->display('index.dwt', $cache_id);
 
 /*------------------------------------------------------ */
@@ -243,7 +259,7 @@ function index_get_group_buy()
     $group_buy_list = array();
     if ($limit > 0)
     {
-        $sql = 'SELECT gb.act_id AS group_buy_id, gb.goods_id, gb.ext_info, gb.goods_name, g.goods_thumb, g.goods_img ' .
+        $sql = 'SELECT gb.act_id AS group_buy_id, gb.goods_id, gb.ext_info, gb.goods_name, gb.start_time, gb.end_time, g.goods_thumb, g.goods_img, g.market_price ' .
                 'FROM ' . $GLOBALS['ecs']->table('goods_activity') . ' AS gb, ' .
                     $GLOBALS['ecs']->table('goods') . ' AS g ' .
                 "WHERE gb.act_type = '" . GAT_GROUP_BUY . "' " .
@@ -263,6 +279,8 @@ function index_get_group_buy()
 
             /* 根据价格阶梯，计算最低价 */
             $ext_info = unserialize($row['ext_info']);
+		
+	
             $price_ladder = $ext_info['price_ladder'];
             if (!is_array($price_ladder) || empty($price_ladder))
             {
@@ -275,13 +293,38 @@ function index_get_group_buy()
                     $price_ladder[$amount_price['amount']] = $amount_price['price'];
                 }
             }
-            ksort($price_ladder);
+            ksort($price_ladderp);
+						
             $row['last_price'] = price_format(end($price_ladder));
+			
+			/*团购节省和折扣计算 by ecmoban start*/
+			$price    = $row['market_price']; //原价 
+			$nowprice = $row['last_price']; //现价
+			$row['jiesheng'] = $price-$nowprice; //节省金额 
+			if($nowprice > 0)
+			{
+				$row['zhekou'] = round(10 / ($price / $nowprice), 1);
+			}
+			else 
+			{ 
+				$row['zhekou'] = 0;
+			}
+
+			$activity_row = $GLOBALS['db']->getRow($sql);
+			$stat = group_buy_stat($row['act_id'], $ext_info['deposit']);
+			
+			$row['cur_amount'] = $stat['valid_goods'];         // 当前数量
+			$row['start_time'] = $row['start_time'];         // 开始时间
+			$row['end_time'] = $row['end_time'];         // 结束时间
+
+			 	
+			/*团购节省和折扣计算 by ecmoban end*/
             $row['url'] = build_uri('group_buy', array('gbid' => $row['group_buy_id']));
             $row['short_name']   = $GLOBALS['_CFG']['goods_name_length'] > 0 ?
                                            sub_str($row['goods_name'], $GLOBALS['_CFG']['goods_name_length']) : $row['goods_name'];
             $row['short_style_name']   = add_style($row['short_name'],'');
             $group_buy_list[] = $row;
+			
         }
     }
 
@@ -357,5 +400,30 @@ function index_get_links()
 
     return $links;
 }
+
+
+function get_flash_xml()
+{
+    $flashdb = array();
+    if (file_exists(ROOT_PATH . DATA_DIR . '/flash_data.xml'))
+    {
+        // 兼容v2.7.0及以前版本
+        if (!preg_match_all('/item_url="([^"]+)"\slink="([^"]+)"\stext="([^"]*)"\ssort="([^"]*)"/', file_get_contents(ROOT_PATH . DATA_DIR . '/flash_data.xml'), $t, PREG_SET_ORDER))
+        {
+            preg_match_all('/item_url="([^"]+)"\slink="([^"]+)"\stext="([^"]*)"/', file_get_contents(ROOT_PATH . DATA_DIR . '/flash_data.xml'), $t, PREG_SET_ORDER);
+        }
+        if (!empty($t))
+        {
+            foreach ($t as $key => $val)
+            {
+                $val[4] = isset($val[4]) ? $val[4] : 0;
+                $flashdb[] = array('src'=>$val[1],'url'=>$val[2],'text'=>$val[3],'sort'=>$val[4]);
+//print_r($flashdb);
+            }
+        }
+    }
+    return $flashdb;
+}
+
 
 ?>

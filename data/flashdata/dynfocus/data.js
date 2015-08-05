@@ -1,16 +1,13 @@
-imgUrl1="data/afficheimg/20150623pkviiv.jpg";
+imgUrl1="data/afficheimg/20140121tpclwh.jpg";
 imgtext1="";
-imgLink1=escape("http://www.qq.com");
-imgUrl2="data/afficheimg/20150623yaqdqw.jpg";
+imgLink1=escape("http://www.haoid.cn");
+imgUrl2="data/afficheimg/20140121tiskvu.jpg";
 imgtext2="";
-imgLink2=escape("http://www.imelai.com");
-imgUrl3="data/afficheimg/20150623lybppj.jpg";
+imgLink2=escape("http://www.haoid.cn");
+imgUrl3="data/afficheimg/20140121gmlyoj.jpg";
 imgtext3="";
-imgLink3=escape("http://www.baidu.com");
-imgUrl4="data/afficheimg/20150623oqtwgj.jpg";
-imgtext4="";
-imgLink4=escape("http://");
+imgLink3=escape("http://www.haoid.cn");
 
-var pics=imgUrl1+"|"+imgUrl2+"|"+imgUrl3+"|"+imgUrl4;
-var links=imgLink1+"|"+imgLink2+"|"+imgLink3+"|"+imgLink4;
-var texts=imgtext1+"|"+imgtext2+"|"+imgtext3+"|"+imgtext4;
+var pics=imgUrl1+"|"+imgUrl2+"|"+imgUrl3;
+var links=imgLink1+"|"+imgLink2+"|"+imgLink3;
+var texts=imgtext1+"|"+imgtext2+"|"+imgtext3;

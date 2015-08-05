@@ -19,12 +19,6 @@ require(dirname(__FILE__) . '/includes/init.php');
 
 if (!empty($_REQUEST['goods']) && is_array($_REQUEST['goods']) && count($_REQUEST['goods']) > 1)
 {
-
-    foreach ($_REQUEST['goods'] as $key=>$val)
-    {
-        $_REQUEST['goods'][$key]=intval($val);
-    }
-
     $where = db_create_in($_REQUEST['goods'], 'id_value');
     $sql = "SELECT id_value , AVG(comment_rank) AS cmt_rank, COUNT(*) AS cmt_count" .
            " FROM " .$ecs->table('comment') .
@@ -38,7 +32,7 @@ if (!empty($_REQUEST['goods']) && is_array($_REQUEST['goods']) && count($_REQUES
     }
 
     $where = db_create_in($_REQUEST['goods'], 'g.goods_id');
-    $sql = "SELECT g.goods_id, g.goods_type, g.goods_name, g.shop_price, g.goods_weight, g.goods_thumb, g.goods_brief, ".
+    $sql = "SELECT g.goods_id, g.goods_type, g.goods_name, g.comments_number,g.sales_volume,g.shop_price, g.goods_weight, g.goods_thumb, g.goods_brief, ".
                 "a.attr_name, v.attr_value, a.attr_id, b.brand_name, ".
                 "IFNULL(mp.user_price, g.shop_price * '$_SESSION[discount]') AS rank_price " .
             "FROM " .$ecs->table('goods'). " AS g ".
@@ -61,6 +55,16 @@ if (!empty($_REQUEST['goods']) && is_array($_REQUEST['goods']) && count($_REQUES
         $arr[$goods_id]['goods_id']     = $goods_id;
         $arr[$goods_id]['url']          = build_uri('goods', array('gid' => $goods_id), $row['goods_name']);
         $arr[$goods_id]['goods_name']   = $row['goods_name'];
+		$arr[$goods_id]['comments_number']   = $row['comments_number'];
+		$arr[$goods_id]['sales_volume']   = $row['sales_volume'];
+		/* 折扣节省计算 by ecmoban start */
+		if($row['market_price'] > 0)
+		{
+			$discount_arr = get_discount($row['goods_id']); //函数get_discount参数goods_id
+		}
+		$arr[$goods_id]['zhekou']  = $discount_arr['discount'];  //zhekou
+		$arr[$goods_id]['jiesheng']  = $discount_arr['jiesheng']; //jiesheng
+		/* 折扣节省计算 by ecmoban end */
         $arr[$goods_id]['shop_price']   = price_format($row['shop_price']);
         $arr[$goods_id]['rank_price']   = price_format($row['rank_price']);
         $arr[$goods_id]['goods_weight'] = (intval($row['goods_weight']) > 0) ?

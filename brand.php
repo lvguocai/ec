@@ -47,10 +47,12 @@ if (empty($brand_id))
         $smarty->assign('ur_here',         $position['ur_here']);  // 当前位置
 
         $smarty->assign('categories',      get_categories_tree()); // 分类树
+		$smarty->assign('categories_pro',  get_categories_tree_pro()); // 分类树加强版
         $smarty->assign('helps',           get_shop_help());       // 网店帮助
         $smarty->assign('top_goods',       get_top10());           // 销售排行
 
         $smarty->assign('brand_list', get_brands());
+
     }
     $smarty->display('brand_list.dwt', $cache_id);
     exit();
@@ -102,6 +104,7 @@ if (!$smarty->is_cached('brand.dwt', $cache_id))
     $smarty->assign('category',       $cate);
 
     $smarty->assign('categories',     get_categories_tree());        // 分类树
+	$smarty->assign('categories_pro',  get_categories_tree_pro()); // 分类树加强版
     $smarty->assign('helps',          get_shop_help());              // 网店帮助
     $smarty->assign('top_goods',      get_top10());                  // 销售排行
     $smarty->assign('show_marketprice', $_CFG['show_marketprice']);
@@ -132,6 +135,7 @@ if (!$smarty->is_cached('brand.dwt', $cache_id))
             $goodslist[] = array();
         }
     }
+
     $smarty->assign('goods_list',      $goodslist);
     $smarty->assign('script_name', 'brand');
 
@@ -144,7 +148,6 @@ $smarty->display('brand.dwt', $cache_id);
 /*------------------------------------------------------ */
 //-- PRIVATE FUNCTION
 /*------------------------------------------------------ */
-
 /**
  * 获得指定品牌的详细信息
  *
@@ -184,7 +187,7 @@ function brand_recommend_goods($type, $brand, $cat = 0)
             $cat_where = '';
         }
 
-        $sql = 'SELECT g.goods_id, g.goods_name, g.market_price, g.shop_price AS org_price, g.promote_price, ' .
+        $sql = 'SELECT g.goods_id, g.goods_name, g.market_price, g.comments_number,g.sales_volume,g.shop_price AS org_price, g.promote_price, ' .
                     "IFNULL(mp.user_price, g.shop_price * '$_SESSION[discount]') AS shop_price, ".
                     'promote_start_date, promote_end_date, g.goods_brief, g.goods_thumb, goods_img, ' .
                     'b.brand_name, g.is_best, g.is_new, g.is_hot, g.is_promote ' .
@@ -229,6 +232,16 @@ function brand_recommend_goods($type, $brand, $cat = 0)
 
             $goods[$idx]['id']           = $row['goods_id'];
             $goods[$idx]['name']         = $row['goods_name'];
+			$goods[$idx]['sales_volume']         = $row['sales_volume'];
+			$goods[$idx]['comments_number']         = $row['comments_number'];
+			/* 折扣节省计算 by ecmoban start */
+			if($row['market_price'] > 0)
+			{
+				$discount_arr = get_discount($row['goods_id']); //函数get_discount参数goods_id
+			}
+			$goods[$idx]['zhekou']  = $discount_arr['discount'];  //zhekou
+			$goods[$idx]['jiesheng']  = $discount_arr['jiesheng']; //jiesheng
+			/* 折扣节省计算 by ecmoban end */
             $goods[$idx]['brief']        = $row['goods_brief'];
             $goods[$idx]['brand_name']   = $row['brand_name'];
             $goods[$idx]['short_style_name']   = $GLOBALS['_CFG']['goods_name_length'] > 0 ?

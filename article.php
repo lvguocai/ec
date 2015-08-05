@@ -57,6 +57,7 @@ if (!$smarty->is_cached('article.dwt', $cache_id))
     }
 
     $smarty->assign('article_categories',   article_categories_tree($article_id)); //文章分类树
+	$smarty->assign('categories_pro',  get_categories_tree_pro()); // 分类树加强版
     $smarty->assign('categories',       get_categories_tree());  // 分类树
     $smarty->assign('helps',            get_shop_help()); // 网店帮助
     $smarty->assign('top_goods',        get_top10());    // 销售排行
@@ -70,6 +71,8 @@ if (!$smarty->is_cached('article.dwt', $cache_id))
     $smarty->assign('email',            $_SESSION['email']);
     $smarty->assign('type',            '1');
     $smarty->assign('promotion_info', get_promotion_info());
+	
+	$smarty->assign('cat_id', get_cat_id_art($article_id));
 
     /* 验证码相关设置 */
     if ((intval($_CFG['captcha']) & CAPTCHA_COMMENT) && gd_version() > 0)
@@ -208,6 +211,11 @@ function article_related_goods($id)
     }
 
     return $arr;
+}
+
+function get_cat_id_art($article_id){
+	$sql = "select cat_id from " .$GLOBALS['ecs']->table('article'). " where article_id = '$article_id'";
+	return $GLOBALS['db']->getOne($sql);
 }
 
 ?>

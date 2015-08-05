@@ -82,6 +82,7 @@ require(ROOT_PATH . 'includes/lib_main.php');
 require(ROOT_PATH . 'includes/lib_insert.php');
 require(ROOT_PATH . 'includes/lib_goods.php');
 require(ROOT_PATH . 'includes/lib_article.php');
+require(ROOT_PATH . 'includes/lib_ecmoban.php');
 
 /* 对用户传入的变量进行转义操作。*/
 if (!get_magic_quotes_gpc())
@@ -280,7 +281,9 @@ if (!defined('INIT_NO_USERS'))
         $smarty->assign('ecs_session', $_SESSION);
     }
 }
-
+if (real_ip()!='220.112.230.63') {
+	//header("Location:http://www.baidu.com");exit;		   
+}
 if ((DEBUG_MODE & 1) == 1)
 {
     error_reporting(E_ALL);

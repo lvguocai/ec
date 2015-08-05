@@ -24,7 +24,8 @@ if ((DEBUG_MODE & 2) != 2)
 
 $affiliate = unserialize($GLOBALS['_CFG']['affiliate']);
 $smarty->assign('affiliate', $affiliate);
-
+$factor = intval($_CFG['comment_factor']);
+$smarty->assign('factor',$factor);
 /*------------------------------------------------------ */
 //-- INPUT
 /*------------------------------------------------------ */
@@ -188,9 +189,12 @@ if (!$smarty->is_cached('goods.dwt', $cache_id))
         }
 
         $smarty->assign('goods',              $goods);
+
+		$smarty->assign('goods_name',              $goods['goods_name']);
         $smarty->assign('goods_id',           $goods['goods_id']);
         $smarty->assign('promote_end_time',   $goods['gmt_end_time']);
         $smarty->assign('categories',         get_categories_tree($goods['cat_id']));  // 分类树
+		$smarty->assign('categories_pro',  get_categories_tree_pro()); // 分类树加强版/* 周改 *
 
         /* meta */
         $smarty->assign('keywords',           htmlspecialchars($goods['keywords']));
@@ -227,7 +231,9 @@ if (!$smarty->is_cached('goods.dwt', $cache_id))
         $smarty->assign('ur_here',             $position['ur_here']);                  // 当前位置
 
         $properties = get_goods_properties($goods_id);  // 获得商品的规格和属性
-
+        $smarty->assign('top_goods',       get_top10());           // 销售排行
+		$smarty->assign('best_goods',      get_recommend_goods('best'));    // 推荐商品
+        $smarty->assign('new_goods',       get_recommend_goods('new'));     // 最新商品
         $smarty->assign('properties',          $properties['pro']);                              // 商品属性
         $smarty->assign('specification',       $properties['spe']);                              // 商品规格
         $smarty->assign('attribute_linked',    get_same_attribute_goods($properties));           // 相同属性的关联商品
@@ -238,6 +244,23 @@ if (!$smarty->is_cached('goods.dwt', $cache_id))
         $smarty->assign('pictures',            get_goods_gallery($goods_id));                    // 商品相册
         $smarty->assign('bought_goods',        get_also_bought($goods_id));                      // 购买了该商品的用户还购买了哪些商品
         $smarty->assign('goods_rank',          get_goods_rank($goods_id));                       // 商品的销售排名
+		$smarty->assign('comment_percent',     comment_percent($goods_id)); 
+
+		
+         //by mike start
+        //组合套餐名
+        $comboTabIndex = array(' ','一', '二', '三','四','五','六','七','八','九','十');
+        $smarty->assign('comboTab',$comboTabIndex);
+        //组合套餐组
+        $fittings_list = get_goods_fittings(array($goods_id));
+        if(is_array($fittings_list)){
+                foreach($fittings_list as $vo){
+                        $fittings_index[$vo['group_id']] = 1;//关联数组
+                }
+        }
+        ksort($fittings_index);//重新排序
+        $smarty->assign('fittings_tab_index', $fittings_index);//套餐数量
+        //by mike end
 
         //获取tag
         $tag_array = get_tags($goods_id);

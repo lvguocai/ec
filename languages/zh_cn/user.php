@@ -21,7 +21,7 @@ $_LANG['no_records'] = '没有记录';
 $_LANG['shot_message'] = "短消息";
 
 /* 用户菜单 */
-$_LANG['label_welcome'] = '欢迎页';
+$_LANG['label_welcome'] = "我的个人主页";
 $_LANG['label_profile'] = '用户信息';
 $_LANG['label_order'] = '我的订单';
 $_LANG['label_address'] = '收货地址';
@@ -435,7 +435,7 @@ $_LANG['passwd_answer'] = '密码问题答案';
 $_LANG['passwd_balnk'] = '密码中不能包含空格';
 
 /* 用户中心默认页面 */
-$_LANG['welcome_to'] = '欢迎您回到';
+$_LANG['welcome_to'] = "欢迎您回到";
 $_LANG['last_time'] = '您的上一次登录时间';
 $_LANG['your_account'] = '您的账户';
 $_LANG['your_notice'] = '用户提醒';

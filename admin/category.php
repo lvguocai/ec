@@ -105,6 +105,10 @@ if ($_REQUEST['act'] == 'insert')
     $cat['show_in_nav']  = !empty($_POST['show_in_nav'])  ? intval($_POST['show_in_nav']): 0;
     $cat['style']        = !empty($_POST['style'])        ? trim($_POST['style'])        : '';
     $cat['is_show']      = !empty($_POST['is_show'])      ? intval($_POST['is_show'])    : 0;
+	/*by zhou*/
+    $cat['is_top_show']      = !empty($_POST['is_top_show'])      ? intval($_POST['is_top_show'])    : 0;	
+	$cat['is_top_style']  = !empty($_POST['is_top_style'])  ? intval($_POST['is_top_style']): 0;
+    /*by zhou*/
     $cat['grade']        = !empty($_POST['grade'])        ? intval($_POST['grade'])      : 0;
     $cat['filter_attr']  = !empty($_POST['filter_attr'])  ? implode(',', array_unique(array_diff($_POST['filter_attr'],array(0)))) : 0;
 
@@ -262,6 +266,10 @@ if ($_REQUEST['act'] == 'update')
     $cat['measure_unit'] = !empty($_POST['measure_unit']) ? trim($_POST['measure_unit']) : '';
     $cat['cat_name']     = !empty($_POST['cat_name'])     ? trim($_POST['cat_name'])     : '';
     $cat['is_show']      = !empty($_POST['is_show'])      ? intval($_POST['is_show'])    : 0;
+	/*by zhou*/
+    $cat['is_top_show']      = !empty($_POST['is_top_show'])      ? intval($_POST['is_top_show'])    : 0;	
+	$cat['is_top_style']  = !empty($_POST['is_top_style'])  ? intval($_POST['is_top_style']): 0;
+/*by zhou*/
     $cat['show_in_nav']  = !empty($_POST['show_in_nav'])  ? intval($_POST['show_in_nav']): 0;
     $cat['style']        = !empty($_POST['style'])        ? trim($_POST['style'])        : '';
     $cat['grade']        = !empty($_POST['grade'])        ? intval($_POST['grade'])      : 0;

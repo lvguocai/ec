@@ -62,7 +62,7 @@ $default_display_type = $_CFG['show_order_type'] == '0' ? 'list' : ($_CFG['show_
 $default_sort_order_method = $_CFG['sort_order_method'] == '0' ? 'DESC' : 'ASC';
 $default_sort_order_type   = $_CFG['sort_order_type'] == '0' ? 'goods_id' : ($_CFG['sort_order_type'] == '1' ? 'shop_price' : 'last_update');
 
-$sort  = (isset($_REQUEST['sort'])  && in_array(trim(strtolower($_REQUEST['sort'])), array('goods_id', 'shop_price', 'last_update'))) ? trim($_REQUEST['sort'])  : $default_sort_order_type;
+$sort  = (isset($_REQUEST['sort'])  && in_array(trim(strtolower($_REQUEST['sort'])), array('goods_id', 'shop_price', 'last_update','sales_volume'))) ? trim($_REQUEST['sort'])  : $default_sort_order_type;
 $order = (isset($_REQUEST['order']) && in_array(trim(strtoupper($_REQUEST['order'])), array('ASC', 'DESC')))                              ? trim($_REQUEST['order']) : $default_sort_order_method;
 $display  = (isset($_REQUEST['display']) && in_array(trim(strtolower($_REQUEST['display'])), array('list', 'grid', 'text'))) ? trim($_REQUEST['display'])  : (isset($_COOKIE['ECS']['display']) ? $_COOKIE['ECS']['display'] : $default_display_type);
 $display  = in_array($display, array('list', 'grid', 'text')) ? $display : 'text';
@@ -74,8 +74,20 @@ setcookie('ECS[display]', $display, gmtime() + 86400 * 7);
 /* 页面的缓存ID */
 $cache_id = sprintf('%X', crc32($cat_id . '-' . $display . '-' . $sort  .'-' . $order  .'-' . $page . '-' . $size . '-' . $_SESSION['user_rank'] . '-' .
     $_CFG['lang'] .'-'. $brand. '-' . $price_max . '-' .$price_min . '-' . $filter_attr_str));
+	
+//判断是否顶级分类调用不同模板   by zhouhuan
+$sql = 'SELECT parent_id,is_top_style FROM '.$ecs->table("category")." WHERE cat_id=$cat_id";
+$cat_row = $db->getRow($sql);
+if($cat_row['parent_id'] == 0 && $cat_row['is_top_style'] != 0)
+{
+	$dwt_name = 'category_top';
+}
+else
+{
+	$dwt_name = 'category';
+}
 
-if (!$smarty->is_cached('category.dwt', $cache_id))
+if (!$smarty->is_cached($dwt_name.'.dwt', $cache_id))
 {
     /* 如果页面没有被缓存则重新获取页面的内容 */
 
@@ -330,17 +342,41 @@ if (!$smarty->is_cached('category.dwt', $cache_id))
     $position = assign_ur_here($cat_id, $brand_name);
     $smarty->assign('page_title',       $position['title']);    // 页面标题
     $smarty->assign('ur_here',          $position['ur_here']);  // 当前位置
-
+	$smarty->assign('categories_pro',  get_categories_tree_pro()); // 分类树加强版/* 周改 */
     $smarty->assign('categories',       get_categories_tree($cat_id)); // 分类树
     $smarty->assign('helps',            get_shop_help());              // 网店帮助
     $smarty->assign('top_goods',        get_top10());                  // 销售排行
     $smarty->assign('show_marketprice', $_CFG['show_marketprice']);
     $smarty->assign('category',         $cat_id);
+	/* 周改 */
+	$sql = 'SELECT parent_id FROM '.$ecs->table('category').' WHERE cat_id ='.$cat_id;
+	
+	$parent_id = $db->getOne($sql);
+	
+	$parent_id_show = $parent_id;
+	while($parent_id != 0)
+	{
+		$parent_id_show = $parent_id;
+		$sql = 'SELECT parent_id FROM '.$ecs->table('category').' WHERE cat_id ='.$parent_id;
+		$parent_id = $db->getOne($sql);
+	}	
+	$smarty->assign('parent_id_show',         $parent_id_show);
+	/* 周改 */
     $smarty->assign('brand_id',         $brand);
     $smarty->assign('price_max',        $price_max);
     $smarty->assign('price_min',        $price_min);
     $smarty->assign('filter_attr',      $filter_attr_str);
     $smarty->assign('feed_url',         ($_CFG['rewrite'] == 1) ? "feed-c$cat_id.xml" : 'feed.php?cat=' . $cat_id); // RSS URL
+	//顶级分类页据输出部分
+	if($parent_id == 0)
+	{
+		$smarty->assign('categories_child',      get_cat_child($cat_id));//获取当前顶级分类下的所有子分类
+		$smarty->assign('categories_child_goods',      get_cat_child_goods($cat_id,1,10)); //获取当前顶级分类下的所有子分类商品
+	}
+	else
+	{
+
+	}
 
     if ($brand > 0)
     {
@@ -391,13 +427,13 @@ if (!$smarty->is_cached('category.dwt', $cache_id))
     }
     $smarty->assign('goods_list',       $goodslist);
     $smarty->assign('category',         $cat_id);
-    $smarty->assign('script_name', 'category');
+    $smarty->assign('script_name', $dwt_name);
 
     assign_pager('category',            $cat_id, $count, $size, $sort, $order, $page, '', $brand, $price_min, $price_max, $display, $filter_attr_str); // 分页
-    assign_dynamic('category'); // 动态内容
+    assign_dynamic($dwt_name); // 动态内容
 }
 
-$smarty->display('category.dwt', $cache_id);
+$smarty->display($dwt_name.'.dwt', $cache_id);
 
 /*------------------------------------------------------ */
 //-- PRIVATE FUNCTION
@@ -445,7 +481,7 @@ function category_get_goods($children, $brand, $min, $max, $ext, $size, $page, $
     }
 
     /* 获得商品列表 */
-    $sql = 'SELECT g.goods_id, g.goods_name, g.goods_name_style, g.market_price, g.is_new, g.is_best, g.is_hot, g.shop_price AS org_price, ' .
+    $sql = 'SELECT g.goods_id, g.goods_name, g.goods_name_style, g.comments_number,g.sales_volume,g.market_price, g.is_new, g.is_best, g.is_hot, g.shop_price AS org_price, ' .
                 "IFNULL(mp.user_price, g.shop_price * '$_SESSION[discount]') AS shop_price, g.promote_price, g.goods_type, " .
                 'g.promote_start_date, g.promote_end_date, g.goods_brief, g.goods_thumb , g.goods_img ' .
             'FROM ' . $GLOBALS['ecs']->table('goods') . ' AS g ' .
@@ -502,6 +538,16 @@ function category_get_goods($children, $brand, $min, $max, $ext, $size, $page, $
         }
         $arr[$row['goods_id']]['name']             = $row['goods_name'];
         $arr[$row['goods_id']]['goods_brief']      = $row['goods_brief'];
+		$arr[$row['goods_id']]['sales_volume']      = $row['sales_volume'];
+		$arr[$row['goods_id']]['comments_number']      = $row['comments_number'];
+		/* 折扣节省计算 by ecmoban start */
+		if($row['market_price'] > 0)
+		{
+			$discount_arr = get_discount($row['goods_id']); //函数get_discount参数goods_id
+		}
+		$arr[$row['goods_id']]['zhekou']  = $discount_arr['discount'];  //zhekou
+		$arr[$row['goods_id']]['jiesheng']  = $discount_arr['jiesheng']; //jiesheng
+		/* 折扣节省计算 by ecmoban end */
         $arr[$row['goods_id']]['goods_style_name'] = add_style($row['goods_name'],$row['goods_name_style']);
         $arr[$row['goods_id']]['market_price']     = price_format($row['market_price']);
         $arr[$row['goods_id']]['shop_price']       = price_format($row['shop_price']);

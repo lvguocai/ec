@@ -1,9 +1,9 @@
 <?php
 // database host
-$db_host   = "localhost";
+$db_host   = "localhost:3306";
 
 // database name
-$db_name   = "xfsm";
+$db_name   = "miqi";
 
 // database username
 $db_user   = "root";
@@ -12,7 +12,7 @@ $db_user   = "root";
 $db_pass   = "root";
 
 // table prefix
-$prefix    = "csc_";
+$prefix    = "ecs_";
 
 $timezone    = "PRC";
 
@@ -30,6 +30,6 @@ define('AUTH_KEY', 'this is a key');
 
 define('OLD_AUTH_KEY', '');
 
-define('API_TIME', '2015-06-23 14:11:58');
+define('API_TIME', '');
 
 ?>
