@@ -12,7 +12,7 @@
  * $Author: liubo $
  * $Id: compare.php 17217 2011-01-19 06:29:08Z liubo $
 */
-
+/*测试一下看怎么提交*/
 define('IN_ECS', true);
 
 require(dirname(__FILE__) . '/includes/init.php');
